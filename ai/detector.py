@@ -7,9 +7,14 @@ import cv2
 import numpy as np
 from PIL import Image
 import streamlit as st
+import torch
 
 from config import DEFAULT_DETECTION_MODEL
 from database.db import list_waste_types
+
+
+def _best_device() -> str:
+    return "cpu"
 
 
 # Ánh xạ tên lớp mô hình sang 5 danh mục chuẩn theo đề tài CV-03:
@@ -123,6 +128,10 @@ WASTE_LABEL_ALIASES = {
 VI_LABEL_MAP = {
     "organic": "Rác hữu cơ",
     "biological": "Rác hữu cơ",
+    "food waste": "Rác hữu cơ (Thức ăn thừa)",
+    "banana": "Rác hữu cơ (Vỏ chuối)",
+    "vegetable": "Rác hữu cơ (Rau củ)",
+    "fruit": "Rác hữu cơ (Trái cây)",
     "plastic": "Nhựa / Thủy tinh tái chế",
     "paper": "Giấy & Bìa carton",
     "cardboard": "Giấy & Bìa carton",
@@ -148,6 +157,10 @@ VI_LABEL_MAP = {
 ASCII_LABEL_MAP = {
     "organic": "Huu co",
     "biological": "Huu co",
+    "food waste": "Huu co (Thuc an)",
+    "banana": "Huu co (Vo chuoi)",
+    "vegetable": "Huu co (Rau cu)",
+    "fruit": "Huu co (Trai cay)",
     "plastic": "Nhua tai che",
     "paper": "Giay / Carton",
     "cardboard": "Giay / Carton",
@@ -219,8 +232,9 @@ def detect_waste(
 
     detector_name = detector_path or DEFAULT_DETECTION_MODEL
     detector = _load_model(detector_name)
+    best_dev = _best_device()
     detected = detector.predict(
-        source=frame, conf=confidence_threshold, verbose=False
+        source=frame, conf=confidence_threshold, device=best_dev, verbose=False
     )[0]
     classifier = _load_model(classifier_path) if classifier_path else None
     waste_types = {
@@ -262,13 +276,32 @@ def detect_waste(
             waste_label = object_name
             classifier_confidence: float | None = None
             waste_type = _waste_type_for_label(str(object_name), waste_types)
+            crop = frame[y1:y2, x1:x2]
+
+            # Khắc phục nhầm lẫn: khi mô hình đoán Cardboard/Paper nhưng vật thể có màu vàng chuối hoặc rau củ tươi
+            raw_name_lower = str(object_name).strip().casefold()
+            if raw_name_lower in {"cardboard", "paper", "normal paper", "other carton"} and crop.size:
+                hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+                h, s, v = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
+                banana_yellow = (h >= 16) & (h <= 36) & (s >= 80) & (v >= 80)
+                veg_green = (h >= 36) & (h <= 85) & (s >= 75) & (v >= 70)
+                orange_fruit = ((h < 16) | (h > 165)) & (s >= 90) & (v >= 90)
+                total_px = crop.shape[0] * crop.shape[1]
+                if np.sum(banana_yellow) / total_px > 0.16:
+                    waste_label = "banana"
+                    waste_type = _waste_type_for_label("banana", waste_types)
+                elif np.sum(veg_green) / total_px > 0.18:
+                    waste_label = "vegetable"
+                    waste_type = _waste_type_for_label("vegetable", waste_types)
+                elif np.sum(orange_fruit) / total_px > 0.20:
+                    waste_label = "fruit"
+                    waste_type = _waste_type_for_label("fruit", waste_types)
 
             if (
                 waste_type is None
                 and classifier is not None
                 and getattr(classifier, "task", None) == "classify"
             ):
-                crop = frame[y1:y2, x1:x2]
                 if crop.size:
                     classification = classifier.predict(source=crop, verbose=False)[0]
                     if classification.probs is not None:
