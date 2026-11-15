@@ -466,9 +466,9 @@ def main() -> None:
         ),
         st.Page(
             admin.render,
-            title="Quản trị & Cài đặt AI",
+            title="Cài đặt mô hình AI",
             icon="⚙️",
-            url_path="admin",
+            url_path="settings",
         ),
     ]
     page = st.navigation(user_pages)
