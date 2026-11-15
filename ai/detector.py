@@ -232,6 +232,14 @@ ASCII_LABEL_MAP = {
     "shoes": "Giay dep",
 }
 
+STANDARD_CATEGORY_MAP = {
+    "organic": "Rác hữu cơ",
+    "plastic": "Nhựa tái chế",
+    "paper": "Giấy & Bìa carton",
+    "metal": "Kim loại & Vỏ lon",
+    "other": "Rác khác (Còn lại)",
+}
+
 # Màu khung theo nhóm rác (định dạng BGR cho OpenCV)
 CATEGORY_BOX_COLORS = {
     "Hữu cơ": (50, 168, 82),    # Xanh lá cây
@@ -415,12 +423,15 @@ def detect_waste(
                 2,
                 cv2.LINE_AA,
             )
+            wt_key = str(waste_type["name"]).strip().casefold() if waste_type and "name" in waste_type else "other"
+            standard_cat = STANDARD_CATEGORY_MAP.get(wt_key, category_name)
             detections.append(
                 {
                     "class_name": vi_display_name,
                     "raw_class_name": str(waste_label),
                     "object_name": str(object_name),
                     "category": category_name,
+                    "standard_category": standard_cat,
                     "instructions": waste_type["instructions"] if waste_type else "",
                     "waste_type_id": waste_type["id"] if waste_type else None,
                     "confidence": detector_confidence,
@@ -469,12 +480,15 @@ def detect_waste(
                 2,
                 cv2.LINE_AA,
             )
+            f_wt_key = str(w_type["name"]).strip().casefold() if w_type and "name" in w_type else "organic"
+            f_standard_cat = STANDARD_CATEGORY_MAP.get(f_wt_key, cat_name)
             detections.append(
                 {
                     "class_name": vi_name,
                     "raw_class_name": fallback_label,
                     "object_name": fallback_label,
                     "category": cat_name,
+                    "standard_category": f_standard_cat,
                     "instructions": w_type["instructions"] if w_type else "",
                     "waste_type_id": w_type["id"] if w_type else 6,
                     "confidence": 0.75,

@@ -21,7 +21,7 @@ def _group_detections_by_category(
 ) -> dict[str, Counter[str]]:
     grouped: dict[str, Counter[str]] = {}
     for item in detections:
-        category = str(item.get("category") or "").strip() or "Chưa ánh xạ"
+        category = str(item.get("standard_category") or item.get("category") or "").strip() or "Chưa ánh xạ"
         grouped.setdefault(category, Counter())[str(item["class_name"])] += 1
     return grouped
 
@@ -258,19 +258,19 @@ def render() -> None:
         st.dataframe(
             [
                 {
-                    "Nhãn nhận diện": item["class_name"],
-                    "Nhóm": item["category"],
+                    "Vật thể": item["class_name"],
+                    "Danh mục rác (5 lớp)": item.get("standard_category", item["category"]),
+                    "Thùng rác quy định": (
+                        f"🔵 {item['category']}"
+                        if item["category"] == "Tái chế"
+                        else (f"🟢 {item['category']}" if item["category"] == "Hữu cơ" else f"⚪ {item['category']}")
+                    ),
                     "Độ tin cậy YOLO": (
                         f"⚠️ {item['confidence']:.1%} (Không chắc chắn)"
                         if item["confidence"] < 0.40
                         else f"✓ {item['confidence']:.1%}"
                     ),
-                    "Độ tin cậy phân loại": (
-                        f"{item['classifier_confidence']:.1%}"
-                        if item["classifier_confidence"] is not None
-                        else "Chưa dùng classifier"
-                    ),
-                    "Hướng dẫn": item["instructions"],
+                    "Hướng dẫn xử lý": item["instructions"],
                 }
                 for item in detections
             ],
