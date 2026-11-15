@@ -7,7 +7,7 @@ DATABASE_PATH = DATABASE_DIR / "waste.db"
 HISTORY_DIR = BASE_DIR / "data" / "history"
 MODEL_DIR = BASE_DIR / "ai" / "model"
 DATASET_DIR = BASE_DIR / "dataset"
-DEFAULT_DETECTION_MODEL = "yolo11n.pt"
+DEFAULT_DETECTION_MODEL = str(MODEL_DIR / "best.pt")
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 

@@ -44,3 +44,4 @@ Thumbs.db
 data/history/*_original.jpg
 data/history/*_result.jpg
 reports/vietnam_predictions/
+*.zip
