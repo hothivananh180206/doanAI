@@ -129,8 +129,8 @@ VI_LABEL_MAP = {
     "organic": "Rác hữu cơ",
     "biological": "Rác hữu cơ",
     "food waste": "Rác hữu cơ (Thức ăn thừa)",
-    "banana": "Rác hữu cơ (Vỏ chuối)",
-    "vegetable": "Rác hữu cơ (Rau củ)",
+    "banana": "Rác hữu cơ (Rau củ / Vỏ quả)",
+    "vegetable": "Rác hữu cơ (Rau củ quả)",
     "fruit": "Rác hữu cơ (Trái cây)",
     "plastic": "Nhựa / Thủy tinh tái chế",
     "paper": "Giấy & Bìa carton",
@@ -157,8 +157,8 @@ VI_LABEL_MAP = {
 ASCII_LABEL_MAP = {
     "organic": "Huu co",
     "biological": "Huu co",
-    "food waste": "Huu co (Thuc an)",
-    "banana": "Huu co (Vo chuoi)",
+    "food waste": "Huu co (Thuc an thua)",
+    "banana": "Huu co (Rau cu / Vo qua)",
     "vegetable": "Huu co (Rau cu)",
     "fruit": "Huu co (Trai cay)",
     "plastic": "Nhua tai che",
@@ -278,24 +278,30 @@ def detect_waste(
             waste_type = _waste_type_for_label(str(object_name), waste_types)
             crop = frame[y1:y2, x1:x2]
 
-            # Khắc phục nhầm lẫn: khi mô hình đoán Cardboard/Paper nhưng vật thể có màu vàng chuối hoặc rau củ tươi
+            # Khắc phục nhầm lẫn: khi mô hình đoán Cardboard/Paper/Trash nhưng thực tế là rác hữu cơ
             raw_name_lower = str(object_name).strip().casefold()
-            if raw_name_lower in {"cardboard", "paper", "normal paper", "other carton"} and crop.size:
+            if raw_name_lower in {"cardboard", "paper", "normal paper", "other carton", "trash", "other"} and crop.size:
                 hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
                 h, s, v = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
                 banana_yellow = (h >= 16) & (h <= 36) & (s >= 80) & (v >= 80)
                 veg_green = (h >= 36) & (h <= 85) & (s >= 75) & (v >= 70)
                 orange_fruit = ((h < 16) | (h > 165)) & (s >= 90) & (v >= 90)
+                cooked_food = ((h < 15) | (h > 165)) & (s >= 60) & (v >= 40) & (v <= 180)
                 total_px = crop.shape[0] * crop.shape[1]
-                if np.sum(banana_yellow) / total_px > 0.16:
-                    waste_label = "banana"
-                    waste_type = _waste_type_for_label("banana", waste_types)
-                elif np.sum(veg_green) / total_px > 0.18:
+
+                # Ưu tiên kiểm tra thức ăn thừa / nấu chín / nước sốt trước
+                if np.sum(cooked_food) / total_px > 0.08:
+                    waste_label = "food waste"
+                    waste_type = _waste_type_for_label("food waste", waste_types)
+                elif np.sum(veg_green) / total_px > 0.15:
                     waste_label = "vegetable"
                     waste_type = _waste_type_for_label("vegetable", waste_types)
-                elif np.sum(orange_fruit) / total_px > 0.20:
+                elif np.sum(orange_fruit) / total_px > 0.18:
                     waste_label = "fruit"
                     waste_type = _waste_type_for_label("fruit", waste_types)
+                elif np.sum(banana_yellow) / total_px > 0.16:
+                    waste_label = "banana"
+                    waste_type = _waste_type_for_label("banana", waste_types)
 
             if (
                 waste_type is None
@@ -348,6 +354,60 @@ def detect_waste(
                     "confidence": detector_confidence,
                     "classifier_confidence": classifier_confidence,
                     "box": (float(x1), float(y1), float(x2), float(y2)),
+                }
+            )
+
+    # Fallback phân tích toàn ảnh nếu YOLO không bắt được khung
+    if not detections:
+        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        hf, sf, vf = hsv_frame[:, :, 0], hsv_frame[:, :, 1], hsv_frame[:, :, 2]
+        tot = frame.shape[0] * frame.shape[1]
+        c_food = ((hf < 15) | (hf > 165)) & (sf >= 60) & (vf >= 40) & (vf <= 180)
+        v_green = (hf >= 36) & (hf <= 85) & (sf >= 75) & (vf >= 70)
+        b_yellow = (hf >= 16) & (hf <= 36) & (sf >= 80) & (vf >= 80)
+
+        fallback_label = None
+        if np.sum(c_food) / tot > 0.08:
+            fallback_label = "food waste"
+        elif np.sum(v_green) / tot > 0.15:
+            fallback_label = "vegetable"
+        elif np.sum(b_yellow) / tot > 0.16:
+            fallback_label = "banana"
+
+        if fallback_label:
+            w_type = _waste_type_for_label(fallback_label, waste_types)
+            cat_name = w_type["category"] if w_type else "Hữu cơ"
+            b_color = CATEGORY_BOX_COLORS.get(cat_name, (50, 168, 82))
+
+            h_f, w_f = frame.shape[:2]
+            fx1, fy1 = int(w_f * 0.05), int(h_f * 0.05)
+            fx2, fy2 = int(w_f * 0.95), int(h_f * 0.95)
+
+            ascii_text = ASCII_LABEL_MAP.get(fallback_label, fallback_label)
+            vi_name = VI_LABEL_MAP.get(fallback_label, fallback_label)
+
+            cv2.rectangle(annotated, (fx1, fy1), (fx2, fy2), b_color, 2)
+            cv2.putText(
+                annotated,
+                f"{ascii_text} 75%",
+                (fx1, max(fy1 - 8, 20)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.55,
+                b_color,
+                2,
+                cv2.LINE_AA,
+            )
+            detections.append(
+                {
+                    "class_name": vi_name,
+                    "raw_class_name": fallback_label,
+                    "object_name": fallback_label,
+                    "category": cat_name,
+                    "instructions": w_type["instructions"] if w_type else "",
+                    "waste_type_id": w_type["id"] if w_type else 6,
+                    "confidence": 0.75,
+                    "classifier_confidence": None,
+                    "box": (float(fx1), float(fy1), float(fx2), float(fy2)),
                 }
             )
 
