@@ -7,13 +7,9 @@ from database.db import delete_history, history_rows, list_waste_types
 
 
 def render() -> None:
-    user = st.session_state["user"]
     st.caption("CÁC LƯỢT PHÂN TÍCH ĐÃ ĐƯỢC LƯU")
     st.title("🕒 Lịch sử nhận diện")
-    records = history_rows(
-        None if user["role"] == "admin" else int(user["id"]),
-        limit=5000,
-    )
+    records = history_rows(None, limit=5000)
     if not records:
         st.info("Lịch sử sẽ xuất hiện tại đây sau khi bạn nhận diện ảnh đầu tiên.")
         return

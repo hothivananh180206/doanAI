@@ -5,8 +5,7 @@ from database.db import statistics
 
 
 def render() -> None:
-    user = st.session_state["user"]
-    stats = statistics(None if user["role"] == "admin" else int(user["id"]))
+    stats = statistics(None)
     st.caption("TỔNG HỢP HOẠT ĐỘNG PHÂN LOẠI")
     st.title("📊 Thống kê tổng quan")
 

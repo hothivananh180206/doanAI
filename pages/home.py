@@ -4,12 +4,9 @@ from database.db import history_rows, list_waste_types, statistics
 
 
 def render() -> None:
-    user = st.session_state["user"]
     st.caption("THỨC DẬY MỖI NGÀY, SỐNG XANH HƠN MỘT CHÚT")
 
-    totals = statistics(
-        None if user["role"] == "admin" else int(user["id"])
-    )
+    totals = statistics(None)
     waste_types = list_waste_types()
     st.markdown(
         """
@@ -35,7 +32,7 @@ def render() -> None:
         unsafe_allow_html=True,
     )
     st.write("")
-    st.title(f"Xin chào, {user['username']} 👋")
+    st.title("Chào mừng đến với EcoSort AI 👋")
     first, second, third = st.columns(3)
     with first:
         with st.container(border=True):
@@ -105,10 +102,7 @@ def render() -> None:
     )
 
     st.subheader("Nhận diện gần đây")
-    records = history_rows(
-        None if user["role"] == "admin" else int(user["id"]),
-        limit=5,
-    )
+    records = history_rows(None, limit=5)
     if records:
         for row in records[:3]:
             with st.container(border=True):

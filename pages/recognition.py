@@ -27,8 +27,8 @@ def _group_detections_by_category(
 
 
 def render() -> None:
-    user = st.session_state["user"]
-    is_admin = user["role"] == "admin"
+    is_admin = True
+    user_id = 1
     st.caption("PHÂN TÍCH ẢNH · NHẬN DIỆN VẬT THỂ · GỢI Ý PHÂN LOẠI")
     st.title("Nhận diện rác")
     st.write("Tải ảnh lên hoặc chụp ảnh bằng camera để bắt đầu phân tích.")
@@ -157,7 +157,7 @@ def render() -> None:
             image_bytes, annotated_rgb, file_id
         )
         history_id = create_history(
-            user_id=int(user["id"]),
+            user_id=user_id,
             image_path=original_path,
             result_image_path=result_path,
             model_path=detection_weights.strip() or DEFAULT_DETECTION_MODEL,

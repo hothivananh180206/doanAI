@@ -443,7 +443,7 @@ def _models_tab() -> None:
                     best_model = train_detector(
                         detect_data_yaml,
                         int(detect_epochs),
-                        f"waste_detect_{st.session_state['user']['id']}",
+                        "waste_detect_run",
                     )
                 set_setting("detection_model", str(best_model.resolve()))
             except Exception as exc:
@@ -494,44 +494,34 @@ def _models_tab() -> None:
 
 
 def render() -> None:
-    if st.session_state["user"]["role"] != "admin":
-        st.error("Trang này chỉ dành cho quản trị viên.")
-        return
     st.caption("TRUNG TÂM QUẢN LÝ")
-    st.title("⚙️ Quản trị hệ thống")
+    st.title("⚙️ Quản trị & Cài đặt AI")
     st.write(
-        "Quản lý tài khoản, danh mục rác, hướng dẫn xử lý và cài đặt AI "
+        "Quản lý danh mục rác, hướng dẫn xử lý và cài đặt mô hình AI "
         "tại các mục bên dưới."
     )
-    users = list_users()
     types = list_waste_types(active_only=False)
     records = history_rows(limit=500)
-    first, second, third = st.columns(3)
+    first, second = st.columns(2)
     with first:
         with st.container(border=True):
-            st.metric("👥 Tài khoản", len(users))
-    with second:
-        with st.container(border=True):
             st.metric(
-                "♻️ Loại rác",
+                "♻️ Loại rác trong hệ thống",
                 sum(bool(item["is_active"]) for item in types),
                 help="Số loại rác đang được sử dụng.",
             )
-    with third:
+    with second:
         with st.container(border=True):
-            st.metric("📷 Lượt nhận diện", len(records))
+            st.metric("📷 Tổng lượt nhận diện", len(records))
 
-    users_tab, types_tab, instructions_tab, history_tab, models_tab = st.tabs(
+    types_tab, instructions_tab, history_tab, models_tab = st.tabs(
         [
-            "👥 Tài khoản",
             "♻️ Danh mục rác",
             "📘 Hướng dẫn xử lý",
             "🧾 Lịch sử & góp ý",
             "🤖 Cài đặt AI",
         ]
     )
-    with users_tab:
-        _users_tab()
     with types_tab:
         _waste_types_tab()
     with instructions_tab:

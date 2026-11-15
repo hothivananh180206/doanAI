@@ -6,37 +6,6 @@ import streamlit as st
 
 from database.db import init_db
 from pages import admin, catalog, history, home, instructions, recognition, statistics
-from services.auth import (
-    end_login_session,
-    refresh_session_user,
-    render_login,
-    restore_login_session,
-)
-
-
-def _render_login() -> None:
-    render_login(st.session_state["_auth_cookie_manager"])
-
-
-def _render_home() -> None:
-    if st.session_state.get("user") is None:
-        _render_login()
-        return
-    home.render()
-
-
-def _require_login(render: Callable[[], None]) -> Callable[[], None]:
-    def guarded_render() -> None:
-        if st.session_state.get("user") is None:
-            st.info(
-                "Hãy đăng nhập để tiếp tục. Sau khi đăng nhập, "
-                "bạn sẽ trở lại trang này."
-            )
-            _render_login()
-            return
-        render()
-
-    return guarded_render
 
 
 def _apply_theme() -> None:
@@ -448,89 +417,61 @@ def main() -> None:
     init_db()
     _apply_theme()
 
-    from streamlit_cookies_controller import CookieController
+    # Thiết lập người dùng mặc định (không cần đăng nhập, truy cập toàn bộ chức năng)
+    if "user" not in st.session_state or st.session_state["user"] is None:
+        st.session_state["user"] = {
+            "id": 1,
+            "username": "Quản trị viên",
+            "role": "admin",
+        }
 
-    cookies = CookieController(key="ecosort_auth_cookies")
-    st.session_state["_auth_cookie_manager"] = cookies
-
-    previous_user = st.session_state.get("user")
-    user = (
-        restore_login_session(cookies)
-        if previous_user is None
-        else refresh_session_user()
-    )
-    if previous_user is not None and user is None:
-        end_login_session(cookies)
-        st.session_state["auth_notice"] = (
-            "Phiên đăng nhập đã hết hạn hoặc tài khoản đã bị khóa. "
-            "Vui lòng đăng nhập lại."
-        )
-        st.session_state["redirect_after_logout"] = True
-
-    login_page = st.Page(
-        _render_login,
-        title="Đăng nhập",
-        icon="♻️",
-        url_path="login",
-        visibility="visible" if user is None else "hidden",
-    )
     home_page = st.Page(
-        _render_home,
+        home.render,
         title="Trang chủ",
         icon="🏠",
         url_path="home",
         default=True,
-        visibility="visible" if user is not None else "hidden",
     )
     user_pages = [
         home_page,
         st.Page(
-            _require_login(recognition.render),
+            recognition.render,
             title="Nhận diện rác",
             icon="🔍",
             url_path="recognition",
-            visibility="visible" if user is not None else "hidden",
         ),
         st.Page(
-            _require_login(catalog.render),
+            catalog.render,
             title="Danh mục rác",
             icon="♻️",
             url_path="catalog",
-            visibility="visible" if user is not None else "hidden",
         ),
         st.Page(
-            _require_login(instructions.render),
+            instructions.render,
             title="Hướng dẫn phân loại",
             icon="🌱",
             url_path="instructions",
-            visibility="visible" if user is not None else "hidden",
         ),
         st.Page(
-            _require_login(history.render),
+            history.render,
             title="Lịch sử nhận diện",
             icon="🕘",
             url_path="history",
-            visibility="visible" if user is not None else "hidden",
         ),
         st.Page(
-            _require_login(statistics.render),
+            statistics.render,
             title="Thống kê",
             icon="📊",
             url_path="statistics",
-            visibility="visible" if user is not None else "hidden",
+        ),
+        st.Page(
+            admin.render,
+            title="Quản trị & Cài đặt AI",
+            icon="⚙️",
+            url_path="admin",
         ),
     ]
-    admin_page = st.Page(
-        _require_login(admin.render),
-        title="Quản trị hệ thống",
-        icon="⚙️",
-        url_path="admin",
-        visibility=(
-            "visible" if user is not None and user["role"] == "admin" else "hidden"
-        ),
-    )
-    user_pages.append(admin_page)
-    page = st.navigation([login_page, *user_pages])
+    page = st.navigation(user_pages)
 
     with st.sidebar:
         st.markdown(
@@ -562,54 +503,16 @@ def main() -> None:
             unsafe_allow_html=True,
         )
         st.divider()
-        if user is None:
+        for nav_page in user_pages:
             st.page_link(
-                login_page,
-                label="Đăng nhập",
-                icon="♻️",
+                nav_page,
+                label=nav_page.title,
+                icon=nav_page.icon,
                 use_container_width=True,
             )
-        else:
-            for nav_page in user_pages:
-                if nav_page is admin_page and user["role"] != "admin":
-                    continue
-                st.page_link(
-                    nav_page,
-                    label=nav_page.title,
-                    icon=nav_page.icon,
-                    use_container_width=True,
-                )
-            st.divider()
-            with st.container(border=True):
-                st.markdown(f"👤 **{user['username']}**")
-                st.caption(
-                    "Quản trị viên" if user["role"] == "admin" else "Người dùng"
-                )
-            with st.container(key="eco-logout"):
-                logout_clicked = st.button(
-                    "↪️ Đăng xuất",
-                    type="secondary",
-                    use_container_width=True,
-                )
-            if logout_clicked:
-                end_login_session(cookies)
-                st.session_state["redirect_after_logout"] = True
-                st.rerun()
         st.divider()
+        st.caption("🌿 EcoSort AI · Đồ án Trí tuệ nhân tạo")
 
-    auth_notice = st.session_state.pop("auth_notice", None)
-    if auth_notice:
-        st.warning(auth_notice)
-
-    if user is None:
-        if st.session_state.pop("redirect_after_logout", False):
-            st.switch_page(login_page)
-        page.run()
-        return
-
-    st.session_state.pop("redirect_after_login", None)
-    if page is login_page:
-        st.switch_page(home_page)
     page.run()
 
 
