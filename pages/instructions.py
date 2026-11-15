@@ -8,9 +8,9 @@ from database.db import list_instructions, list_waste_types
 
 
 def render() -> None:
-    st.caption("MẸO PHÂN LOẠI RÁC TẠI NGUỒN")
-    st.title("📘 Hướng dẫn phân loại")
-    st.write("Hướng dẫn phân loại rác chi tiết theo từng nhóm và loại rác phổ biến.")
+    st.caption("DANH MỤC 5 NHÓM RÁC · QUY TẮC PHÂN LOẠI TẠI NGUỒN")
+    st.title("📘 Danh mục & Hướng dẫn phân loại")
+    st.write("Tra cứu đặc điểm 5 loại rác và hướng dẫn xử lý đúng quy định.")
     waste_types = list_waste_types()
     if not waste_types:
         st.info("Chưa có hướng dẫn phân loại.")

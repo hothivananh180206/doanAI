@@ -27,7 +27,6 @@ def _group_detections_by_category(
 
 
 def render() -> None:
-    is_admin = True
     user_id = 1
     st.caption("PHÂN TÍCH ẢNH · NHẬN DIỆN VẬT THỂ · GỢI Ý PHÂN LOẠI")
     st.title("Nhận diện rác")
@@ -66,50 +65,6 @@ def render() -> None:
                 f'<span class="eco-pill">✓ Đã chọn: {selected_name}</span>',
                 unsafe_allow_html=True,
             )
-
-        if is_admin:
-            with st.expander("⚙️ Cài đặt nhận diện dành cho quản trị viên"):
-                detection_weights = st.text_input(
-                    "Model YOLO phát hiện vật thể",
-                    value=detector_model,
-                    help="Mặc định dùng yolo11n.pt; lần đầu có thể cần Internet để tải model.",
-                )
-                classifier_weights = st.text_input(
-                    "Model phân loại vật liệu (tùy chọn)",
-                    value=classifier_model,
-                    help="Checkpoint classification được áp dụng trên từng vùng cắt.",
-                )
-                if st.button("Lưu cấu hình model", type="primary"):
-                    set_setting("detection_model", detection_weights.strip())
-                    set_setting("classification_model", classifier_weights.strip())
-                    st.success("Đã lưu cấu hình.")
-                train_dir = BASE_DIR / "dataset" / "train"
-                val_dir = BASE_DIR / "dataset" / "val"
-                train_count = sum(
-                    path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
-                    for path in train_dir.glob("**/*")
-                ) if train_dir.exists() else 0
-                val_count = sum(
-                    path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
-                    for path in val_dir.glob("**/*")
-                ) if val_dir.exists() else 0
-                st.caption(
-                    f"Dataset hiện có {train_count} ảnh huấn luyện và "
-                    f"{val_count} ảnh kiểm tra."
-                )
-                st.warning(
-                    "Model mặc định nhận diện vật thể phổ thông, chưa được huấn luyện "
-                    "riêng cho rác. Model phân loại hiện có còn ít ảnh huấn luyện; "
-                    "độ tin cậy không đồng nghĩa với độ chính xác."
-                )
-        else:
-            if classifier_model:
-                st.caption("Đang sử dụng model phân loại do quản trị viên thiết lập.")
-            else:
-                st.caption(
-                    "Chưa cấu hình model phân loại rác. Nhãn YOLO chỉ được gán vào "
-                    "danh mục khi tên lớp khớp với tên loại rác trong danh mục."
-                )
 
         confidence_col, action_col = st.columns([2, 1], vertical_alignment="bottom")
         with confidence_col:
@@ -312,49 +267,13 @@ def render() -> None:
             hide_index=True,
         )
 
-    with st.expander("Gửi góp ý cho quản trị viên"):
+    with st.expander("Gửi góp ý về kết quả nhận diện"):
         with st.form(f"feedback_{history_id}"):
-            feedback_text = st.text_area("Góp ý về kết quả nhận diện")
+            feedback_text = st.text_area("Góp ý của bạn")
             sent = st.form_submit_button("Gửi góp ý", type="primary")
         if sent:
             if not feedback_text.strip():
                 st.error("Hãy nhập nội dung góp ý.")
             else:
-                save_feedback(int(user["id"]), history_id, feedback_text)
-                st.success("Đã gửi góp ý.")
-
-    if is_admin:
-        with st.expander("Huấn luyện lại model phân loại"):
-            st.caption(
-                "Chức năng này chỉ phân loại vật liệu ở vùng cắt, không tìm nhiều "
-                "vật thể và không tạo bounding box. Mỗi lớp cần ít nhất 50 ảnh "
-                "train và 10 ảnh validation; dataset hiện tại chưa đạt mức này. "
-                "Muốn có khung như ảnh mẫu, hãy dùng chức năng YOLO detect trong "
-                "Quản trị hệ thống sau khi chuẩn bị nhãn bounding box."
-            )
-            epochs = st.number_input(
-                "Số epoch",
-                min_value=1,
-                max_value=300,
-                value=50,
-                key="classifier_epochs",
-            )
-            with st.container(key="eco-orange"):
-                if st.button(
-                    "Huấn luyện classifier",
-                    key="train_classifier",
-                    type="secondary",
-                ):
-                    from ai.trainer import train_classifier
-
-                    run_name = f"waste_{user['id']}"
-                    try:
-                        with st.spinner(
-                            "Đang huấn luyện YOLO classification trên CPU..."
-                        ):
-                            best_model = train_classifier(int(epochs), run_name)
-                        set_setting("classification_model", str(best_model.resolve()))
-                    except Exception as exc:
-                        st.error(f"Huấn luyện thất bại: {exc}")
-                    else:
-                        st.success(f"Đã lưu model: {best_model}")
+                save_feedback(user_id, history_id, feedback_text)
+                st.success("Cảm ơn bạn đã gửi góp ý!")

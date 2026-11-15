@@ -5,7 +5,7 @@ from collections.abc import Callable
 import streamlit as st
 
 from database.db import init_db
-from pages import admin, catalog, history, home, instructions, recognition, statistics
+from pages import history, home, instructions, recognition, statistics
 
 
 def _apply_theme() -> None:
@@ -441,16 +441,10 @@ def main() -> None:
             url_path="recognition",
         ),
         st.Page(
-            catalog.render,
-            title="Danh mục rác",
-            icon="♻️",
-            url_path="catalog",
-        ),
-        st.Page(
             instructions.render,
-            title="Hướng dẫn phân loại",
-            icon="🌱",
-            url_path="instructions",
+            title="Danh mục & Hướng dẫn",
+            icon="📘",
+            url_path="guide",
         ),
         st.Page(
             history.render,
@@ -463,12 +457,6 @@ def main() -> None:
             title="Thống kê",
             icon="📊",
             url_path="statistics",
-        ),
-        st.Page(
-            admin.render,
-            title="Cài đặt mô hình AI",
-            icon="⚙️",
-            url_path="settings",
         ),
     ]
     page = st.navigation(user_pages)
