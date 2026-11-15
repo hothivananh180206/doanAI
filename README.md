@@ -1,155 +1,148 @@
-# Phân loại rác bằng Python, Streamlit và YOLO
+# ♻️ EcoSort AI - Hệ Thống Phân Loại Rác Thải Hỗ Trợ Tái Chế Tại Nguồn
 
-Ứng dụng web chạy cục bộ trên máy. Giao diện được dựng bằng Streamlit trong
-Python, có một lớp CSS gọn trong `app.py` để đồng bộ màu sắc, thẻ nội dung và
-thanh điều hướng; dự án không dùng framework frontend riêng. YOLO xử lý ảnh,
-OpenCV/NumPy đọc và vẽ khung, SQLite lưu tài khoản và lịch sử, Streamlit hiển
-thị biểu đồ thống kê.
+> **Môn học:** Trí tuệ nhân tạo với Python  
+> **Mã đề tài:** `CV-03` · Phân loại rác thải hỗ trợ tái chế (⭐⭐)  
+> **Công nghệ chính:** Python 3.11/3.12 · Ultralytics YOLO · FastAPI · Streamlit · OpenCV · SQLite · Plotly
 
-## Chạy ứng dụng
+---
 
-Máy Windows đã cài Python 3.12:
+## 📌 1. Giới thiệu bài toán & Mục tiêu
 
+- **Đối tượng người dùng:** Hộ gia đình, trường học, khu dân cư đang thực hiện phân loại rác thải tại nguồn.
+- **Vấn đề thực tế:** Người dân thường khó phân biệt các loại rác tái chế, hữu cơ, rác nguy hại; danh mục quá lớn để tra cứu thủ công.
+- **Giải pháp AI:** 
+  - Chụp ảnh hoặc quét trực tiếp qua camera/webcam.
+  - Mô hình YOLO tự động phát hiện vật thể và phân loại chính xác vào 4 nhóm: **Hữu cơ (xanh lá)**, **Tái chế (xanh dương)**, **Nguy hại (đỏ/vàng)**, **Còn lại (xám)**.
+  - Cung cấp hướng dẫn xử lý và mẹo phân loại tương ứng ngay tại chỗ.
+
+---
+
+## 🏛️ 2. Kiến trúc hệ thống (System Architecture)
+
+```
+[ Người dùng / Camera / Client ]
+               │
+       ┌───────┴────────────────┐
+       ▼                        ▼
+[ Giao diện Streamlit ]   [ FastAPI REST API ] (Port 8000)
+ (Port 8501 - Dashboard)        │
+       │                        │
+       └──────────────┬─────────┘
+                      ▼
+            [ YOLO AI Engine ]
+            - YOLO Object Detection
+            - Label to Category Mapping
+                      │
+                      ▼
+            [ SQLite Database ]
+            - waste_types & instructions
+            - detection_history & logs
+```
+
+---
+
+## 🚀 3. Hướng dẫn cài đặt & Khởi chạy
+
+### Yêu cầu hệ thống:
+- Python 3.10, 3.11 hoặc 3.12
+- Hệ điều hành: Windows, macOS hoặc Linux
+
+### Bước 1: Cài đặt thư viện
 ```powershell
-Set-Location D:\doanAI
-$python = "$env:LocalAppData\Programs\Python\Python312\python.exe"
-& $python -m pip install -r .\requirements.txt
-& $python .\main.py
+pip install -r requirements.txt
 ```
 
-Hoặc chạy trực tiếp:
-
+### Bước 2: Chạy ứng dụng giao diện Web (Streamlit)
 ```powershell
-& $python -m streamlit run .\app.py
+python main.py
+# hoặc bấm đúp vào file run.bat
+```
+👉 Truy cập: `http://localhost:8501`
+
+### Bước 3: Chạy máy chủ API riêng biệt (FastAPI)
+```powershell
+python api.py
+# hoặc bấm đúp vào file run_api.bat
+```
+👉 API Server: `http://127.0.0.1:8000`  
+👉 Tài liệu tương tác Swagger UI: `http://127.0.0.1:8000/docs`
+
+---
+
+## 📡 4. Tài liệu API (FastAPI Endpoints)
+
+| Phương thức | Endpoint | Mô tả |
+|:---:|---|---|
+| `GET` | `/` | Kiểm tra trạng thái hoạt động của API (Health check) |
+| `GET` | `/categories` | Danh sách các nhóm rác và hướng dẫn xử lý |
+| `POST` | `/predict` | Nhận diện vật thể rác từ file ảnh tải lên |
+| `GET` | `/docs` | Giao diện kiểm thử trực tiếp Swagger UI |
+
+### Ví dụ gọi API bằng cURL:
+```bash
+curl -X POST "http://127.0.0.1:8000/predict" \
+     -H "accept: application/json" \
+     -H "Content-Type: multipart/form-data" \
+     -F "file=@sample_images/sample_plastic_bottle.jpg"
 ```
 
-Mở địa chỉ `http://127.0.0.1:8501`. Dừng máy chủ bằng `Ctrl+C` trong PowerShell.
-Lần đầu chạy, Streamlit có thể cần Internet để tải model `yolo11n.pt` và
-`yolo11n-cls.pt`.
-
-## Đăng nhập và tải lại trang
-
-Phiên đăng nhập được lưu bằng cookie trình duyệt và token ngẫu nhiên đã băm trong
-SQLite. Tải lại trang (F5) hoặc mở lại URL trang sẽ giữ đăng nhập và trang hiện
-tại; token bị thu hồi khi người dùng đăng xuất. Cookie có thời hạn tối đa một
-năm. Tài khoản bị khóa hoặc xóa không thể dùng token để tiếp tục truy cập.
-Không chia sẻ cookie hoặc hồ sơ trình duyệt đã đăng nhập cho người khác.
-
-Ở lần đầu mở ứng dụng, tạo tài khoản quản trị viên. Mật khẩu lưu dạng PBKDF2
-trong `database/waste.db`. Sau đó quản trị viên có thể tạo/khóa tài khoản, quản
-lý danh mục và hướng dẫn, cấu hình model, xem lịch sử.
-
-## Phân quyền
-
-- **Người dùng:** nhận diện ảnh, gửi góp ý, tra cứu danh mục/hướng dẫn; chỉ xem
-  thống kê và xem/xóa lịch sử của tài khoản mình.
-- **Quản trị viên:** quản lý tài khoản và vai trò, danh mục, hướng dẫn, cấu hình
-  và huấn luyện model; xem lịch sử và thống kê toàn hệ thống.
-- Tài khoản bị khóa hoặc bị xóa sẽ bị đăng xuất ở lần ứng dụng kiểm tra phiên
-  tiếp theo. Tài khoản tự đăng ký luôn mang vai trò người dùng.
-
-## Nhận diện ảnh
-
-1. Đăng nhập và mở trang **Nhận diện rác**.
-2. Tải ảnh JPG/PNG/BMP/WEBP hoặc chụp một ảnh từ webcam.
-3. YOLO phát hiện vật thể, vẽ bounding box, đếm vật thể và lưu kết quả vào SQLite.
-4. Quản trị viên có thể cấu hình model classification đã huấn luyện để phân loại
-   vật liệu trong từng vùng cắt. Lịch sử ảnh gốc và ảnh có khung lưu trong
-   `data/history`.
-
-Camera dùng `st.camera_input` để chụp ảnh đơn; không phải video stream thời gian
-thực. Việc phát video liên tục trong trình duyệt thường cần thành phần frontend
-riêng, nằm ngoài phạm vi giao diện Streamlit hiện tại.
-
-## Model và độ chính xác
-
-Mặc định `yolo11n.pt` là model YOLO detect trên các nhãn COCO phổ thông, không
-phải detector rác chuyên biệt. Nó có thể tìm thấy vật như chai hoặc cốc nhưng
-không luôn biết đó là nhựa hay thủy tinh. Dùng checkpoint `detect` được huấn
-luyện bằng bounding box rác để nhận diện đúng các lớp rác và vẽ khung chuyên
-dụng.
-
-Checkpoint `runs/classify/.../best.pt` chỉ phân loại ảnh/vùng cắt, không tạo
-bounding box. Dataset phân loại hiện có khoảng một ảnh mỗi lớp cho train và
-validation nên ứng dụng từ chối huấn luyện classifier với số lượng này để tránh
-tạo model có vẻ hoạt động nhưng dự đoán không đáng tin. Cần ít nhất 50 ảnh train
-và 10 ảnh validation khác nhau cho mỗi lớp; đây chỉ là mức khởi đầu.
-
-Để có kết quả nhiều khung như chai nhựa và thùng carton trong cùng ảnh, cần
-dataset **YOLO detect** đã gắn bounding box cho từng vật thể. Trang
-**Quản trị hệ thống → Cài đặt AI** có chức năng huấn luyện detector từ `data.yaml`.
-Cấu trúc thường dùng:
-
-```text
-dataset/detect/
-  data.yaml
-  images/train/
-  images/val/
-  labels/train/
-  labels/val/
+### Dữ liệu trả về (JSON):
+```json
+{
+  "success": true,
+  "filename": "sample_plastic_bottle.jpg",
+  "total_detected": 1,
+  "categories": ["Tái chế"],
+  "detections": [
+    {
+      "class_name": "Chai / Đồ nhựa",
+      "raw_class_name": "plastic",
+      "category": "Tái chế",
+      "confidence": 0.885,
+      "bounding_box": {"x1": 45.0, "y1": 60.0, "x2": 280.0, "y2": 510.0},
+      "instructions": "Tráng sạch nước bẩn, tháo nắp chai riêng, ép bẹp thân chai để tiết kiệm không gian và bỏ vào thùng tái chế (xanh dương)."
+    }
+  ]
+}
 ```
 
-Mỗi ảnh cần một tệp `.txt` cùng tên trong thư mục `labels`; mỗi dòng theo dạng
-`class_id x_center y_center width height` với tọa độ chuẩn hóa từ 0 đến 1.
-Ví dụ `dataset/detect/data.yaml`:
+---
 
-```yaml
-path: .
-train: images/train
-val: images/val
-names:
-  0: plastic bottle
-  1: cardboard
+## 📊 5. Kiểm thử & Đánh giá mô hình (Metrics & Reports)
+
+Dự án cung cấp sẵn 2 kịch bản kiểm thử:
+
+1. **Đánh giá trên tập test chuẩn (Precision, Recall, mAP50, Confusion Matrix):**
+   ```powershell
+   python evaluate.py data/dataset.yaml
+   ```
+   Kết quả và biểu đồ Confusion Matrix được lưu vào thư mục `reports/`.
+
+2. **Kiểm thử trên tập ảnh rác tự chụp thực tế (Việt Nam):**
+   - Chép các ảnh chụp từ điện thoại vào thư mục `data/test_vietnam/`.
+   - Chạy lệnh kiểm thử:
+     ```powershell
+     python test_vietnam.py
+     ```
+   - Kết quả ảnh khoanh vùng và bảng báo cáo được lưu tại `reports/vietnam_predictions/`.
+
+---
+
+## 🌐 6. Hướng dẫn triển khai truy cập từ ngoài (Public Access)
+
+### Cách 1: Dùng Ngrok (Demo nhanh tại buổi bảo vệ)
+1. Tải [ngrok](https://ngrok.com/) và mở terminal:
+```powershell
+ngrok http 8501
 ```
+2. Copy đường link dạng `https://xxxx.ngrok-free.app` chia sẻ cho ban giám khảo hoặc người dùng truy cập trực tiếp từ điện thoại.
 
-`data.yaml` khai báo đường dẫn train/val và tên lớp. Ảnh mẫu trong giao diện
-không đủ làm dataset huấn luyện: hiện dự án chưa có ảnh detect đã gắn khung,
-nên chưa thể huấn luyện đúng model cho ví dụ đó. Cần bổ sung ảnh đa dạng và
-nhãn bounding box chính xác trước khi bấm huấn luyện. Tên các lớp cần khớp với
-tên loại trong danh mục (ví dụ `plastic bottle` được gán nhóm **Tái chế**).
-Không thể bảo đảm độ chính xác cụ thể chỉ từ số epoch.
-Để giảm RAM khi huấn luyện trên CPU, ứng dụng dùng ảnh 320 px, batch 1, không
-nạp sẵn dataset vào bộ nhớ và không tạo worker phụ; huấn luyện có thể chậm hơn.
-
-Nếu model nhận diện sai, dùng các ảnh có nhãn rõ và huấn luyện lại; không thể
-bảo đảm nhận diện chính xác mọi ảnh Google. Tôn trọng giấy phép ảnh và kiểm tra
-nguồn trước khi đưa ảnh vào dataset.
-
-## Cấu trúc dự án
-
-```text
-app.py                  # Điều hướng Streamlit, Python
-main.py                 # Khởi chạy Streamlit
-config.py               # Đường dẫn và cấu hình
-ai/
-  detector.py           # YOLO detect, classifier crop, OpenCV
-  trainer.py            # Huấn luyện classifier
-database/
-  db.py                 # SQLite, tài khoản, danh mục, lịch sử
-pages/
-  home.py
-  recognition.py
-  catalog.py
-  instructions.py
-  history.py
-  statistics.py
-  admin.py
-services/
-  auth.py
-dataset/
-data/history/
-ai/model/
-requirements.txt
-```
-
-## SQLite
-
-File cơ sở dữ liệu là `database/waste.db`. Các bảng gồm:
-
-- `users`: tài khoản, vai trò, trạng thái.
-- `waste_types`, `instructions`: danh mục rác và hướng dẫn xử lý.
-- `detection_history`, `detection_details`: ảnh, thời điểm, model và từng vật thể.
-- `feedback`: góp ý người dùng.
-- `app_settings`: cấu hình đường dẫn model.
-
-Không xóa file cơ sở dữ liệu khi ứng dụng đang chạy.
+### Cách 2: Triển khai qua Streamlit Community Cloud (Miễn phí 24/7)
+1. Push mã nguồn lên GitHub cá nhân:
+   ```powershell
+   git remote add origin https://github.com/<tai-khoan>/<ten-repo>.git
+   git branch -M main
+   git push -u origin main
+   ```
+2. Đăng nhập [share.streamlit.io](https://share.streamlit.io/) bằng GitHub.
+3. Chọn Repository vừa tạo, chọn nhánh `main`, file chính là `app.py` và bấm **Deploy**.
