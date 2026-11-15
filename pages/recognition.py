@@ -246,14 +246,25 @@ def render() -> None:
             st.warning(
                 "Tên lớp dự đoán của model chưa khớp tên loại rác nào trong danh mục."
             )
-    elif detections:
+    if detections:
+        low_conf_items = [d for d in detections if d["confidence"] < 0.40]
+        if low_conf_items:
+            names_low = ", ".join(f"'{d['class_name']}' ({d['confidence']:.0%})" for d in low_conf_items)
+            st.warning(
+                f"⚠️ **Không chắc chắn:** Có vật thể {names_low} đạt độ tin cậy dưới 40%. "
+                "Mô hình không chắc chắn về kết quả này; vui lòng đối chiếu danh mục bên dưới thay vì đoán bừa."
+            )
         st.subheader("Vật thể có khung nhận diện")
         st.dataframe(
             [
                 {
                     "Nhãn nhận diện": item["class_name"],
                     "Nhóm": item["category"],
-                    "Độ tin cậy YOLO": f"{item['confidence']:.1%}",
+                    "Độ tin cậy YOLO": (
+                        f"⚠️ {item['confidence']:.1%} (Không chắc chắn)"
+                        if item["confidence"] < 0.40
+                        else f"✓ {item['confidence']:.1%}"
+                    ),
                     "Độ tin cậy phân loại": (
                         f"{item['classifier_confidence']:.1%}"
                         if item["classifier_confidence"] is not None

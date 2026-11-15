@@ -84,17 +84,9 @@ WASTE_LABEL_ALIASES = {
     "pop tab": "metal",
     "scrap metal": "metal",
 
-    # 5. Rác khác (Còn lại)
+    # 5. Rác khác (Còn lại) - Pin, quần áo, giày dép, xốp, v.v.
     "other": "other",
     "trash": "other",
-    "glass": "other",
-    "brown-glass": "other",
-    "green-glass": "other",
-    "white-glass": "other",
-    "broken glass": "other",
-    "glass bottle": "other",
-    "glass cup": "other",
-    "glass jar": "other",
     "battery": "other",
     "electronics": "other",
     "electronic": "other",
@@ -106,7 +98,6 @@ WASTE_LABEL_ALIASES = {
     "textile": "other",
     "miscellaneous": "other",
     "misc": "other",
-    "disposable food container": "other",
     "foam cup": "other",
     "foam food container": "other",
     "garbage bag": "other",
@@ -115,25 +106,42 @@ WASTE_LABEL_ALIASES = {
     "spread tub": "other",
     "squeezable tube": "other",
     "styrofoam piece": "other",
+
+    # Thủy tinh → Tái chế (chai thủy tinh ở VN được thu gom tái chế)
+    "glass": "plastic",        # dùng nhóm plastic vì DB không có "glass" riêng
+    "brown-glass": "plastic",
+    "green-glass": "plastic",
+    "white-glass": "plastic",
+    "broken glass": "other",   # thủy tinh vỡ → Còn lại (nguy hiểm)
+    "glass bottle": "plastic",
+    "glass cup": "plastic",
+    "glass jar": "plastic",
+    "disposable food container": "other",
 }
 
 # Tên tiếng Việt hiển thị trên giao diện chi tiết (chuẩn 5 lớp)
 VI_LABEL_MAP = {
     "organic": "Rác hữu cơ",
     "biological": "Rác hữu cơ",
-    "plastic": "Nhựa tái chế",
+    "plastic": "Nhựa / Thủy tinh tái chế",
     "paper": "Giấy & Bìa carton",
     "cardboard": "Giấy & Bìa carton",
     "metal": "Kim loại & Vỏ lon",
     "other": "Rác khác",
     "trash": "Rác khác",
-    "glass": "Rác khác (Thủy tinh)",
-    "brown-glass": "Rác khác (Thủy tinh nâu)",
-    "green-glass": "Rác khác (Thủy tinh xanh)",
-    "white-glass": "Rác khác (Thủy tinh trắng)",
-    "battery": "Rác khác (Pin/Điện tử)",
-    "clothes": "Rác khác (Quần áo/Vải)",
-    "shoes": "Rác khác (Giày dép)",
+    # Thủy tinh nguyên → Tái chế
+    "glass": "Thủy tinh (Tái chế)",
+    "brown-glass": "Chai thủy tinh nâu (Tái chế)",
+    "green-glass": "Chai thủy tinh xanh (Tái chế)",
+    "white-glass": "Chai thủy tinh trắng (Tái chế)",
+    "glass bottle": "Chai thủy tinh (Tái chế)",
+    "glass cup": "Ly thủy tinh (Tái chế)",
+    "glass jar": "Lọ thủy tinh (Tái chế)",
+    "broken glass": "Thủy tinh vỡ (Nguy hiểm)",
+    # Còn lại
+    "battery": "Pin / Thiết bị điện tử",
+    "clothes": "Quần áo / Vải",
+    "shoes": "Giày dép",
 }
 
 # Tên không dấu hiển thị trên bounding box OpenCV
@@ -146,13 +154,17 @@ ASCII_LABEL_MAP = {
     "metal": "Kim loai",
     "other": "Rac khac",
     "trash": "Rac khac",
-    "glass": "Rac khac",
-    "brown-glass": "Rac khac",
-    "green-glass": "Rac khac",
-    "white-glass": "Rac khac",
-    "battery": "Rac khac",
-    "clothes": "Rac khac",
-    "shoes": "Rac khac",
+    "glass": "Thuy tinh (tai che)",
+    "brown-glass": "TT nau (tai che)",
+    "green-glass": "TT xanh (tai che)",
+    "white-glass": "TT trang (tai che)",
+    "glass bottle": "Chai thuy tinh",
+    "glass cup": "Ly thuy tinh",
+    "glass jar": "Lo thuy tinh",
+    "broken glass": "TT vo (nguy hiem)",
+    "battery": "Pin / Dien tu",
+    "clothes": "Quan ao / Vai",
+    "shoes": "Giay dep",
 }
 
 # Màu khung theo nhóm rác (định dạng BGR cho OpenCV)
