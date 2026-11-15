@@ -13,21 +13,11 @@ from config import DATABASE_PATH
 
 
 DEFAULT_WASTE_TYPES = (
-    ("plastic", "Tái chế", "Chai nhựa PET, ly nhựa, can nhựa, vỏ bao bì nhựa sạch.", "Tráng sạch nước bẩn, tháo nắp chai riêng, ép bẹp thân chai để tiết kiệm không gian và bỏ vào thùng tái chế (xanh dương)."),
-    ("paper", "Tái chế", "Giấy in A4, sách báo cũ, vở học sinh, tài liệu giấy khô ráo.", "Giữ giấy khô ráo, không dính dầu mỡ hoặc chất lỏng. Xếp gọn gàng vào thùng rác tái chế (xanh dương)."),
-    ("glass", "Tái chế", "Chai lọ thủy tinh, ly cốc thủy tinh các loại.", "Rửa sạch bên trong, để ráo. Nếu bị vỡ, bọc kỹ bằng nhiều lớp báo hoặc hộp cứng để tránh gây thương tích."),
-    ("white-glass", "Tái chế", "Chai, lọ, hũ thủy tinh trắng trong suốt.", "Rửa sạch cặn, tháo rời nắp đậy. Cho vào thùng tái chế thủy tinh."),
-    ("brown-glass", "Tái chế", "Chai bia nâu, chai nước tăng lực nâu, lọ thuốc thủy tinh màu hổ phách.", "Tráng sạch bên trong, không đập vỡ. Bỏ vào thùng rác tái chế để tái sử dụng."),
-    ("green-glass", "Tái chế", "Chai rượu vang, chai bia xanh lá, chai nước có ga màu xanh.", "Rửa sạch cặn chất lỏng, tháo nút bần/nắp kim loại. Bỏ vào thùng rác tái chế thủy tinh."),
-    ("metal", "Tái chế", "Vỏ lon bia, lon nước ngọt, hộp thiếc, đồ kim loại nhỏ.", "Rửa sạch cặn bên trong, dẫm hoặc bóp bẹp nếu có thể, bỏ vào thùng rác tái chế (xanh dương)."),
-    ("cardboard", "Tái chế", "Thùng carton đóng hàng, hộp bánh kẹo, bìa giấy cứng.", "Tháo bỏ băng dính, nhãn nilon và kim bấm. Gấp phẳng bìa carton và bỏ vào thùng tái chế (xanh dương)."),
     ("organic", "Hữu cơ", "Thức ăn thừa, vỏ rau củ quả, bã trà, lá cây.", "Cho vào thùng rác hữu cơ (màu xanh lá). Không lẫn túi nilon hay đồ nhựa. Thích hợp ủ phân vi sinh (compost)."),
-    ("biological", "Hữu cơ", "Rác thải hữu cơ sinh học, thức ăn, vỏ trái cây, cặn bã thực vật.", "Cho vào thùng rác hữu cơ (màu xanh lá). Gạn bỏ bớt nước thừa, không để lẫn rác vô cơ."),
-    ("battery", "Nguy hại", "Pin tiểu (AA, AAA), pin điện thoại, ắc quy, thiết bị điện tử hỏng.", "CỰC KỲ NGUY HẠI: Không vứt vào thùng rác sinh hoạt. Dán băng dính cách điện 2 cực, gom vào hộp riêng và mang đến điểm thu gom pin chuyên dụng."),
-    ("clothes", "Còn lại", "Quần áo cũ rách, vải vụn, chăn màn cũ hỏng.", "Nếu còn dùng được nên giặt sạch để quyên góp từ thiện. Nếu đã rách hỏng, cuộn gọn và bỏ vào thùng rác còn lại (màu xám)."),
-    ("shoes", "Còn lại", "Giày dép cũ hỏng, đế cao su, dép xốp, da tổng hợp hỏng.", "Buộc gọn theo đôi hoặc bọc trong túi nhỏ, bỏ vào thùng rác còn lại (màu xám) để chôn lấp/xử lý nhiệt."),
-    ("trash", "Còn lại", "Bao bì snack mạ nhôm, túi bóng bẩn, hộp xốp bẩn, tã bỉm, rác sinh hoạt khó tái chế.", "Buộc kín túi rác sinh hoạt và bỏ vào thùng rác còn lại (màu xám). Không bỏ lẫn rác tái chế."),
-    ("other", "Còn lại", "Các loại rác thải sinh hoạt thông thường khác không thuộc nhóm trên.", "Cho vào túi rác buộc kín, bỏ vào thùng rác còn lại (màu xám)."),
+    ("plastic", "Tái chế", "Chai nhựa PET, ly nhựa, can nhựa, vỏ bao bì nhựa sạch.", "Tráng sạch nước bẩn, tháo nắp chai riêng, ép bẹp thân chai để tiết kiệm không gian và bỏ vào thùng tái chế (xanh dương)."),
+    ("paper", "Tái chế", "Giấy in A4, sách báo cũ, thùng carton, hộp giấy khô ráo.", "Giữ giấy và bìa carton khô ráo, không dính dầu mỡ. Tháo bỏ băng dính, xếp phẳng gọn gàng vào thùng rác tái chế (xanh dương)."),
+    ("metal", "Tái chế", "Vỏ lon bia, lon nước ngọt, hộp thiếc, đồ kim loại nhỏ.", "Rửa sạch cặn đồ uống bên trong, dẫm hoặc bóp bẹp nếu có thể, bỏ vào thùng rác tái chế (xanh dương)."),
+    ("other", "Còn lại", "Bao bì snack mạ nhôm, túi bóng bẩn, hộp xốp dơ, thủy tinh, pin, quần áo giày dép cũ, rác khó tái chế.", "Buộc kín trong túi rác sinh hoạt và bỏ vào thùng rác còn lại (màu xám)."),
 )
 
 

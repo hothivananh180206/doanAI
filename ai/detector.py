@@ -12,64 +12,23 @@ from config import DEFAULT_DETECTION_MODEL
 from database.db import list_waste_types
 
 
-# Ánh xạ tên lớp mô hình sang danh mục chuẩn trong cơ sở dữ liệu
+# Ánh xạ tên lớp mô hình sang 5 danh mục chuẩn theo đề tài CV-03:
+# 1. Hữu cơ (organic)
+# 2. Nhựa tái chế (plastic)
+# 3. Giấy & Carton (paper)
+# 4. Kim loại (metal)
+# 5. Rác khác (other)
 WASTE_LABEL_ALIASES = {
-    # 1. Rác hữu cơ (Organic)
-    "biological": "organic",
+    # 1. Rác hữu cơ
     "organic": "organic",
+    "biological": "organic",
     "food waste": "organic",
     "biodegradable": "organic",
     "vegetable": "organic",
     "fruit": "organic",
     "banana": "organic",
 
-    # 2. Rác tái chế - Thủy tinh (Glass)
-    "glass": "glass",
-    "brown-glass": "glass",
-    "green-glass": "glass",
-    "white-glass": "glass",
-    "broken glass": "glass",
-    "glass bottle": "glass",
-    "glass cup": "glass",
-    "glass jar": "glass",
-
-    # 3. Rác tái chế - Bìa carton (Cardboard)
-    "cardboard": "cardboard",
-    "corrugated carton": "cardboard",
-    "drink carton": "cardboard",
-    "egg carton": "cardboard",
-    "meal carton": "cardboard",
-    "other carton": "cardboard",
-    "pizza box": "cardboard",
-
-    # 4. Rác tái chế - Giấy (Paper)
-    "paper": "paper",
-    "book": "paper",
-    "magazine": "paper",
-    "newspaper": "paper",
-    "magazine paper": "paper",
-    "normal paper": "paper",
-    "paper bag": "paper",
-    "paper cup": "paper",
-    "paper straw": "paper",
-    "tissues": "paper",
-    "toilet tube": "paper",
-    "wrapping paper": "paper",
-
-    # 5. Rác tái chế - Kim loại (Metal)
-    "metal": "metal",
-    "can": "metal",
-    "drink can": "metal",
-    "food can": "metal",
-    "aerosol": "metal",
-    "aluminium blister pack": "metal",
-    "aluminium foil": "metal",
-    "metal bottle cap": "metal",
-    "metal lid": "metal",
-    "pop tab": "metal",
-    "scrap metal": "metal",
-
-    # 6. Rác tái chế - Nhựa (Plastic)
+    # 2. Nhựa tái chế
     "plastic": "plastic",
     "plastic bottle": "plastic",
     "clear plastic bottle": "plastic",
@@ -91,14 +50,55 @@ WASTE_LABEL_ALIASES = {
     "plastic bag": "plastic",
     "crisp packet": "plastic",
 
-    # 7. Rác nguy hại - Pin & Điện tử (Battery)
-    "battery": "battery",
-    "electronics": "battery",
-    "electronic": "battery",
-    "e-waste": "battery",
+    # 3. Giấy & Bìa carton
+    "paper": "paper",
+    "cardboard": "paper",
+    "corrugated carton": "paper",
+    "drink carton": "paper",
+    "egg carton": "paper",
+    "meal carton": "paper",
+    "other carton": "paper",
+    "pizza box": "paper",
+    "book": "paper",
+    "magazine": "paper",
+    "newspaper": "paper",
+    "magazine paper": "paper",
+    "normal paper": "paper",
+    "paper bag": "paper",
+    "paper cup": "paper",
+    "paper straw": "paper",
+    "tissues": "paper",
+    "toilet tube": "paper",
+    "wrapping paper": "paper",
 
-    # 8. Rác còn lại (Other)
+    # 4. Kim loại
+    "metal": "metal",
+    "can": "metal",
+    "drink can": "metal",
+    "food can": "metal",
+    "aerosol": "metal",
+    "aluminium blister pack": "metal",
+    "aluminium foil": "metal",
+    "metal bottle cap": "metal",
+    "metal lid": "metal",
+    "pop tab": "metal",
+    "scrap metal": "metal",
+
+    # 5. Rác khác (Còn lại)
+    "other": "other",
     "trash": "other",
+    "glass": "other",
+    "brown-glass": "other",
+    "green-glass": "other",
+    "white-glass": "other",
+    "broken glass": "other",
+    "glass bottle": "other",
+    "glass cup": "other",
+    "glass jar": "other",
+    "battery": "other",
+    "electronics": "other",
+    "electronic": "other",
+    "e-waste": "other",
     "clothes": "other",
     "cloth": "other",
     "shoes": "other",
@@ -115,48 +115,50 @@ WASTE_LABEL_ALIASES = {
     "spread tub": "other",
     "squeezable tube": "other",
     "styrofoam piece": "other",
-    "other": "other",
 }
 
-# Tên tiếng Việt hiển thị trên giao diện chi tiết
+# Tên tiếng Việt hiển thị trên giao diện chi tiết (chuẩn 5 lớp)
 VI_LABEL_MAP = {
+    "organic": "Rác hữu cơ",
     "biological": "Rác hữu cơ",
-    "brown-glass": "Thủy tinh nâu",
-    "green-glass": "Thủy tinh xanh",
-    "white-glass": "Thủy tinh trắng",
-    "glass": "Chai lọ thủy tinh",
-    "cardboard": "Bìa carton / Hộp giấy",
-    "paper": "Giấy / Báo",
-    "metal": "Vỏ lon / Kim loại",
-    "plastic": "Chai / Đồ nhựa",
-    "battery": "Pin / Rác điện tử",
-    "clothes": "Quần áo / Vải cũ",
-    "shoes": "Giày dép cũ",
-    "trash": "Rác còn lại",
+    "plastic": "Nhựa tái chế",
+    "paper": "Giấy & Bìa carton",
+    "cardboard": "Giấy & Bìa carton",
+    "metal": "Kim loại & Vỏ lon",
+    "other": "Rác khác",
+    "trash": "Rác khác",
+    "glass": "Rác khác (Thủy tinh)",
+    "brown-glass": "Rác khác (Thủy tinh nâu)",
+    "green-glass": "Rác khác (Thủy tinh xanh)",
+    "white-glass": "Rác khác (Thủy tinh trắng)",
+    "battery": "Rác khác (Pin/Điện tử)",
+    "clothes": "Rác khác (Quần áo/Vải)",
+    "shoes": "Rác khác (Giày dép)",
 }
 
 # Tên không dấu hiển thị trên bounding box OpenCV
 ASCII_LABEL_MAP = {
+    "organic": "Huu co",
     "biological": "Huu co",
-    "brown-glass": "Thuy tinh nau",
-    "green-glass": "Thuy tinh xanh",
-    "white-glass": "Thuy tinh trang",
-    "glass": "Thuy tinh",
-    "cardboard": "Bia carton",
-    "paper": "Giay",
+    "plastic": "Nhua tai che",
+    "paper": "Giay / Carton",
+    "cardboard": "Giay / Carton",
     "metal": "Kim loai",
-    "plastic": "Nhua",
-    "battery": "Pin (Nguy hai)",
-    "clothes": "Quan ao / Vai",
-    "shoes": "Giay dep",
-    "trash": "Rac con lai",
+    "other": "Rac khac",
+    "trash": "Rac khac",
+    "glass": "Rac khac",
+    "brown-glass": "Rac khac",
+    "green-glass": "Rac khac",
+    "white-glass": "Rac khac",
+    "battery": "Rac khac",
+    "clothes": "Rac khac",
+    "shoes": "Rac khac",
 }
 
 # Màu khung theo nhóm rác (định dạng BGR cho OpenCV)
 CATEGORY_BOX_COLORS = {
     "Hữu cơ": (50, 168, 82),    # Xanh lá cây
     "Tái chế": (220, 120, 40),   # Xanh dương
-    "Nguy hại": (30, 30, 220),   # Đỏ
     "Còn lại": (120, 120, 120),  # Xám
 }
 
