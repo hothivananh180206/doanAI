@@ -330,9 +330,30 @@ def detect_waste(
             waste_type = _waste_type_for_label(str(object_name), waste_types)
             crop = frame[y1:y2, x1:x2]
 
-            # Khắc phục nhầm lẫn: khi mô hình đoán Cardboard/Paper/Trash nhưng thực tế là rác hữu cơ
+            # Khắc phục nhầm lẫn:
             raw_name_lower = str(object_name).strip().casefold()
-            if raw_name_lower in {"cardboard", "paper", "normal paper", "other carton", "trash", "other"} and crop.size:
+
+            # 1. Giấy, báo cũ, sách vở -> TUYỆT ĐỐI giữ nguyên là Giấy tái chế
+            if raw_name_lower in {"paper", "normal paper", "newspaper", "magazine", "book"}:
+                waste_label = "paper"
+                waste_type = _waste_type_for_label("paper", waste_types)
+
+            # 2. Kiểm tra vỏ lon kim loại (nếu bị nhầm thành drink carton hoặc cardboard)
+            elif raw_name_lower in {"drink carton", "cardboard"} and crop.size:
+                ch, cw = crop.shape[:2]
+                if 1.1 <= ch / max(1, cw) <= 2.6:
+                    top_rim = crop[:max(1, int(ch * 0.12)), :]
+                    bot_rim = crop[max(1, int(ch * 0.88)):, :]
+                    hsv_top = cv2.cvtColor(top_rim, cv2.COLOR_BGR2HSV)
+                    hsv_bot = cv2.cvtColor(bot_rim, cv2.COLOR_BGR2HSV)
+                    silver_top = (hsv_top[:, :, 1] < 45) & (hsv_top[:, :, 2] > 60) & (hsv_top[:, :, 2] < 240)
+                    silver_bot = (hsv_bot[:, :, 1] < 45) & (hsv_bot[:, :, 2] > 60) & (hsv_bot[:, :, 2] < 240)
+                    if (np.sum(silver_top) / silver_top.size > 0.06) or (np.sum(silver_bot) / silver_bot.size > 0.08):
+                        waste_label = "drink can"
+                        waste_type = _waste_type_for_label("drink can", waste_types)
+
+            # 3. Kiểm tra rác hữu cơ (Chỉ áp dụng khi model đoán Cardboard/Trash/Other thành đồ ăn)
+            if waste_label == object_name and raw_name_lower in {"cardboard", "trash", "other"} and crop.size:
                 hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
                 h, s, v = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
                 banana_yellow = (h >= 16) & (h <= 36) & (s >= 80) & (v >= 80)
@@ -341,8 +362,7 @@ def detect_waste(
                 cooked_food = ((h < 15) | (h > 165)) & (s >= 60) & (v >= 40) & (v <= 180)
                 total_px = crop.shape[0] * crop.shape[1]
 
-                # Ưu tiên kiểm tra thức ăn thừa / nấu chín / nước sốt trước
-                if np.sum(cooked_food) / total_px > 0.08:
+                if np.sum(cooked_food) / total_px > 0.08 and s.mean() > 30:
                     waste_label = "food waste"
                     waste_type = _waste_type_for_label("food waste", waste_types)
                 elif np.sum(veg_green) / total_px > 0.15:
